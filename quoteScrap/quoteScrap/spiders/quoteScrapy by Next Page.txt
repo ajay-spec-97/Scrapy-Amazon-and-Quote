@@ -1,0 +1,42 @@
+# -*- coding: utf-8 -*-
+
+# -*- coding: utf-8 -*-
+
+import scrapy
+from ..items import QuotescrapItem         
+
+class QuoteSpider(scrapy.Spider):                    # This class we inherit from Spider from Scrapy class(includes inbuilt methods)
+    name = 'quote'                                   # name of the spider
+    start_urls = [                                   # list of urls to scrap 
+        'http://quotes.toscrape.com/'
+        ]
+    
+    def parse(self, response):                          # response variable contains source code of the website we are scrapping
+        items = QuotescrapItem()                        #item is object of class imported Quotescrapitem()
+        
+        all_div_quotes = response.css('div.quote')      # from source code(response) we extract all tags from class_name "quote"
+        
+        for quote in all_div_quotes:                             # eterate all the quote from all_div_quotes for 1 page
+            title = quote.css('span.text::text').extract()       # extract only "text" from class span with name = "text"
+            author = quote.css('small.author::text').extract()   # extract only "text" from class small with name = "author"
+            tag = quote.css('.tag::text').extract()              #extract tag    
+            
+            items['title'] = title                              # title var from spider is assigned to..[] bracket variable used is from items.py file
+            items['author'] = author
+            items['tag'] = tag
+            
+            yield items                                             #yield items are sent to pipeline
+            
+        next_page = response.css('li.next a::attr(href)').get()     # 'next' is the value of li class, href is attribute of <a> tag
+            
+        if next_page != None:
+            yield response.follow(next_page, callback = self.parse) #if next_page has value follow() will take us to next page and callback parse()
+            
+            
+            '''
+            yield {                         # we are extracting values in form of dictionary,# we use yield instead of return keyword in spider
+                'title' : title,
+                'author' : author,
+                'tag' : tag
+                }
+            '''
